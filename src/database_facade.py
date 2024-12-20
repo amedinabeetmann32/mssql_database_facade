@@ -1,7 +1,5 @@
-from pandas import DataFrame, concat,to_datetime
+from pandas import DataFrame,to_datetime
 from mssql.singleton import Singleton
-from typing import Tuple
-from pandasql import sqldf
 
 class DatabaseFacade:
     """
@@ -280,103 +278,6 @@ class DatabaseFacade:
         ccve['fecha'] = to_datetime(ccve['fecha'])
         
         return ccve
-    
-    def fetch_precios(self, rpus: DataFrame, fecha_inicio: str, fecha_fin: str) -> DataFrame:
-        """
-            Obtiene la generacion de cada planta del ultimo mes, ajustando con su intervalo, ya sea 5minutal o 15minutal
-        """
-        
-        query = """
-            SELECT
-                mercado, nodo
-            FROM (
-                SELECT 
-                    Mercado_Solar mercado,
-                    Nodo_cobertura_solar nodo
-                FROM 
-                    rpus
-                WHERE
-                    Mercado_Solar = 'PML'
-                UNION
-                SELECT 
-                    Mercado_eolico mercado,
-                    Nodo_cobertura_eolica nodo
-                FROM 
-                    rpus
-                WHERE
-                    Mercado_eolico = 'PML'
-                UNION
-                SELECT 
-                    Mercado_24hrs mercado,
-                    Nodo_cobertura_24hrs nodo
-                FROM 
-                    rpus
-                WHERE
-                    Mercado_24hrs = 'PML'
-            )
-        """
-            
-        nodos_pml: DataFrame = sqldf(query, locals())
-        
-        query = """
-            SELECT
-                mercado, nodo
-            FROM (
-                SELECT 
-                    Mercado_Solar mercado,
-                    Nodo_cobertura_solar nodo
-                FROM 
-                    rpus
-                WHERE
-                    Mercado_Solar = 'PMZ'
-                UNION
-                SELECT 
-                    Mercado_eolico mercado,
-                    Nodo_cobertura_eolica nodo
-                FROM 
-                    rpus
-                WHERE
-                    Mercado_eolico = 'PMZ'
-                UNION
-                SELECT 
-                    Mercado_24hrs mercado,
-                    Nodo_cobertura_24hrs nodo
-                FROM 
-                    rpus
-                WHERE
-                    Mercado_24hrs = 'PMZ'
-            )
-        """
-            
-        nodos_pmz: DataFrame = sqldf(query, locals())
-        
-        nodos: DataFrame = concat(objs=[nodos_pml, nodos_pmz], ignore_index=True)
-    
-        precios: DataFrame = DataFrame()
-        
-        for _, row  in nodos.iterrows():
-            clave, precio = ('[Clave del nodo]', '[Precio marginal local ($/MWh)]') if row["mercado"] == 'PML' else ('[Zona de Carga]', '[Precio Zonal  ($/MWh)]')
-            
-            precios_locales: DataFrame = self.db.executable_query(f"""
-            SELECT
-                fecha AS fecha, CAST(hora AS int) AS hora, {clave} AS clave, {precio} AS precio, '{row["mercado"]}' AS mercado
-            FROM 
-                [{row["mercado"]}(MDA) (SIN)]
-            WHERE
-                fecha BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
-            AND
-                {clave} = '{row["nodo"]}'
-            ORDER BY
-                fecha, hora
-            """)
-            precios: DataFrame = concat(objs=[precios, precios_locales], ignore_index=True)
-            
-            
-        
-        precios['fecha'] = to_datetime(precios['fecha'])
-        
-        return precios
-      
     
     def fetch_tipo_cambio(self, fecha_inicio: str, fecha_fin: str) -> DataFrame:
         """
