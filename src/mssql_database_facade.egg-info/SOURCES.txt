@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+src/database_facade.py
+src/mssql/__init__.py
+src/mssql/singleton.py
+src/mssql_database_facade.egg-info/PKG-INFO
+src/mssql_database_facade.egg-info/SOURCES.txt
+src/mssql_database_facade.egg-info/dependency_links.txt
+src/mssql_database_facade.egg-info/top_level.txt
